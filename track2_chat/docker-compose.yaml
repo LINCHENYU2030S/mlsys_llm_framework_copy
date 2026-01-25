@@ -1,0 +1,16 @@
+services:
+  chat-engine:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - /huggingface:/root/.cache/huggingface
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
