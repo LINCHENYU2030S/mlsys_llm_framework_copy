@@ -52,7 +52,7 @@ class ChatEngine:
         results_generator = self.engine.generate(
             prompt,
             sampling_params,
-            random_uuid(),
+            random_uuid(), # Unique request ID for vLLM tracking
         )
 
         final_output = None

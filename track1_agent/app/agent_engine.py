@@ -149,6 +149,8 @@ class AgentEngine:
                 max_rounds = node.max_loop_rounds if node.max_loop_rounds is not None else 3
                 count = loop_counters.get(node.id, 0)
                 
+                # Logic: 'yes' means loop again, 'no' means continue to next section.
+                # Increment counter only on 'yes'. Reset counter on exit.
                 if output == "yes" and count < max_rounds:
                     loop_counters[node.id] = count + 1
                     current_node_id = node.yes_node_id

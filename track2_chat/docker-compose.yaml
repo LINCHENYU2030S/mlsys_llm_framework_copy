@@ -7,6 +7,7 @@ services:
       - /huggingface:/root/.cache/huggingface
     environment:
       - HF_HOME=/root/.cache/huggingface
+    platform: linux/amd64
     deploy:
       resources:
         reservations:
