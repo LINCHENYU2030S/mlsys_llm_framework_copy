@@ -21,4 +21,6 @@ EXPOSE 8000
 # We need to make sure the GPU libraries are visible
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 
+ENV VLLM_ATTENTION_BACKEND=FLASHINFER
+
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
