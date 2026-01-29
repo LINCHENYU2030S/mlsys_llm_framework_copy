@@ -93,8 +93,6 @@ class AgentEngine:
         steps_count = 0
         
         loop_counters = {}
-        
-        last_logprobs = None
 
         # Resolve global defaults
         default_temp = request.temperature
@@ -150,7 +148,6 @@ class AgentEngine:
             # Only update last_output for tasks to preserve context through logic checks
             if node.type == "task":
                 context["last_output"] = output
-                last_logprobs = logprobs
             
             trace.append(ExecutionStep(
                 node_id=node.id,
@@ -191,5 +188,4 @@ class AgentEngine:
             status="completed" if current_node_id is None else "running",
             trace=trace,
             final_output=context["last_output"],
-            final_logprobs=last_logprobs
         )
