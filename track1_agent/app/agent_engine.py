@@ -31,7 +31,7 @@ class AgentEngine:
         self.is_ready = True
         print("Agent Engine initialized and ready.")
 
-    async def _generate_text(self, prompt: str, temperature: float, max_tokens: int, allowed_choices: list[str] | None = None) -> str:
+    async def _generate_text(self, prompt: str, temperature: float, max_tokens: int, allowed_choices: list[str] | None = None) -> tuple[str, list[float]]:
         structured_params = None
         
         if allowed_choices:
@@ -41,7 +41,8 @@ class AgentEngine:
         sampling_params = SamplingParams(
             temperature=temperature,
             max_tokens=max_tokens,
-            structured_outputs=structured_params
+            structured_outputs=structured_params,
+            logprobs=1
         )
         
         messages = [{"role": "user", "content": prompt}]
@@ -58,8 +59,27 @@ class AgentEngine:
             final_output = request_output
 
         if final_output is None:
-            return ""
-        return final_output.outputs[0].text
+            return "", []
+            
+        text = final_output.outputs[0].text
+        output_data = final_output.outputs[0]
+        
+        if output_data.logprobs is None:
+            raise RuntimeError("logprobs are missing from vLLM output")
+            
+        if not output_data.token_ids:
+            raise RuntimeError("token_ids is empty, cannot provide logprobs")
+            
+        logprobs: list[float] = []
+        for i, token_id in enumerate(output_data.token_ids):
+            if i < len(output_data.logprobs):
+                step_logprobs = output_data.logprobs[i]
+                if token_id in step_logprobs:
+                    logprobs.append(step_logprobs[token_id].logprob)
+                else:
+                    raise RuntimeError(f"Token ID {token_id} not found in logprobs at step {i}")
+                
+        return text, logprobs
 
     async def run(self, request: WorkflowRequest) -> WorkflowResponse:
         if not self.is_ready:
@@ -73,6 +93,8 @@ class AgentEngine:
         steps_count = 0
         
         loop_counters = {}
+        
+        last_logprobs = None
 
         # Resolve global defaults
         default_temp = request.temperature
@@ -100,7 +122,8 @@ class AgentEngine:
                     node_id=node.id,
                     node_type=node.type,
                     input_context=str(context),
-                    output=output
+                    output=output,
+                    logprobs=None
                 ))
                 current_node_id = node.next_node_id
                 continue
@@ -117,7 +140,7 @@ class AgentEngine:
                 allowed_choices = ["yes", "no"]
 
             # 4. Execute LLM Node
-            output = await self._generate_text(
+            output, logprobs = await self._generate_text(
                 prompt, 
                 temperature=current_temp, 
                 max_tokens=current_max_tokens, 
@@ -127,12 +150,14 @@ class AgentEngine:
             # Only update last_output for tasks to preserve context through logic checks
             if node.type == "task":
                 context["last_output"] = output
+                last_logprobs = logprobs
             
             trace.append(ExecutionStep(
                 node_id=node.id,
                 node_type=node.type,
                 input_context=str(context),
-                output=output
+                output=output,
+                logprobs=logprobs
             ))
 
             if allowed_choices:
@@ -165,5 +190,6 @@ class AgentEngine:
             workflow_id=request.workflow_id,
             status="completed" if current_node_id is None else "running",
             trace=trace,
-            final_output=context["last_output"]
+            final_output=context["last_output"],
+            final_logprobs=last_logprobs
         )

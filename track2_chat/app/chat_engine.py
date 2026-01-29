@@ -48,6 +48,7 @@ class ChatEngine:
         sampling_params = SamplingParams(
             temperature=request.temperature,
             max_tokens=request.max_tokens,
+            logprobs=1
         )
         results_generator = self.engine.generate(
             prompt,
@@ -64,4 +65,20 @@ class ChatEngine:
 
         text_output = final_output.outputs[0].text
         
-        return ChatResponse(output=text_output)
+        output_data = final_output.outputs[0]
+        if output_data.logprobs is None:
+            raise RuntimeError("logprobs are missing from vLLM output")
+        
+        if not output_data.token_ids:
+            raise RuntimeError("token_ids is empty, cannot provide logprobs")
+
+        logprobs: list[float] = []
+        for i, token_id in enumerate(output_data.token_ids):
+            if i < len(output_data.logprobs):
+                step_logprobs = output_data.logprobs[i]
+                if token_id in step_logprobs:
+                    logprobs.append(step_logprobs[token_id].logprob)
+                else:
+                    raise RuntimeError(f"Token ID {token_id} not found in logprobs at step {i}")
+        
+        return ChatResponse(output=text_output, logprobs=logprobs)

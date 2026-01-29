@@ -12,3 +12,4 @@ class ChatRequest(BaseModel):
 # Simplified Response Schema
 class ChatResponse(BaseModel):
     output: str
+    logprobs: list[float]

@@ -31,9 +31,11 @@ class ExecutionStep(BaseModel):
     node_type: str
     input_context: str
     output: str
+    logprobs: list[float]
 
 class WorkflowResponse(BaseModel):
     workflow_id: str
     status: Literal["completed", "failed", "running"]
     trace: list[ExecutionStep]
     final_output: str
+    final_logprobs: list[float]

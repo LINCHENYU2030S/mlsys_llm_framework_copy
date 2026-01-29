@@ -17,7 +17,7 @@ This starter kit provides a scaffold for building an agentic LLM engine. We have
 ```
 
 ### Your Task
-Modify `app/agent_engine.py` to optimize the LLM inference for the agentic workflow scenario. 
+Modify `app/agent_engine.py` to optimize the LLM inference for the agentic workflow scenario. The benchmark evaluates throughput, latency, perplexity (output quality), and trace length (efficiency).
 
 ## Local Development & Testing
 

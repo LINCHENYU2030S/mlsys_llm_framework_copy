@@ -17,7 +17,7 @@ This starter kit provides a scaffold for building a high-performance chat engine
 ```
 
 ### Your Task
-Modify `app/chat_engine.py` to replace the mock generation logic with a real inference engine.
+Modify `app/chat_engine.py` to replace the mock generation logic with a real inference engine. The benchmark evaluates throughput, latency, and perplexity (output quality).
 
 ### API Specification
 *   **Endpoint**: `POST /v1/chat/completions`
