@@ -94,9 +94,10 @@ docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/$GITHUB_USERNAME/chat
 
 ### 3. Launch & Test
 Rent a GPU instance using your template. We suggest using NVIDIA RTX 5080 as this aligns with the test environment. 
+Note that if you want to use Flash attention, please use Vast AI instances with Max CUDA: 13.0. 
 
 Once running, you can open the **IP & Port Info** tab of the instance by clicking on the IP address, which provide the external port `$VAST_PORT` mapping to the internal 8000 port (which the engine is listening on). 
-Then you should access the engine at `http://$VAST_IP:$VAST_PORT`.
+Then you should be able to access the engine at `http://$VAST_IP:$VAST_PORT`.
 
 ## Submission Instructions
 
