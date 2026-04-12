@@ -31,8 +31,6 @@ class AgentEngine:
             enable_prefix_caching=True,
             trust_remote_code=True,
             max_num_batched_tokens=16384,
-            max_num_partial_prefills=3,
-            max_long_partial_prefills=1,
         )
 
         self.engine = AsyncLLMEngine.from_engine_args(engine_args)
