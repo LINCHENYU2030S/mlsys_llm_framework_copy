@@ -2,6 +2,7 @@ from collections import OrderedDict
 
 from app.schemas import WorkflowRequest, WorkflowResponse, ExecutionStep
 from app.constants import MAX_STEPS, MODEL_NAME, MAX_MODEL_LENGTH
+from app.prompt_template_rewriter import rewrite_prompt_template_for_prefix_caching
 from vllm.engine.arg_utils import AsyncEngineArgs
 from vllm.engine.async_llm_engine import AsyncLLMEngine
 from vllm.sampling_params import SamplingParams, StructuredOutputsParams
@@ -30,7 +31,6 @@ class AgentEngine:
             calculate_kv_scales=True,
             enable_prefix_caching=True,
             trust_remote_code=True,
-            max_num_batched_tokens=16384,
         )
 
         self.engine = AsyncLLMEngine.from_engine_args(engine_args)
@@ -188,7 +188,10 @@ class AgentEngine:
 
             # 2. Prepare Prompt
             try:
-                prompt = node.prompt_template.format(**context)
+                optimized_prompt_template = rewrite_prompt_template_for_prefix_caching(
+                    node.prompt_template
+                )
+                prompt = optimized_prompt_template.format(**context)
             except Exception as e:
                 prompt = f"Error formatting prompt: {e}"
 
