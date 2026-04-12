@@ -24,12 +24,15 @@ class AgentEngine:
 
         engine_args = AsyncEngineArgs(
             model=self.model_name,
-            gpu_memory_utilization=0.9,
+            gpu_memory_utilization=0.95,
             max_model_len=MAX_MODEL_LENGTH,
             kv_cache_dtype="fp8",
             calculate_kv_scales=True,
             enable_prefix_caching=True,
             trust_remote_code=True,
+            max_num_batched_tokens=16384,
+            max_num_partial_prefills=3,
+            max_long_partial_prefills=1,
         )
 
         self.engine = AsyncLLMEngine.from_engine_args(engine_args)
