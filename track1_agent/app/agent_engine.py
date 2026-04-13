@@ -27,6 +27,7 @@ class AgentEngine:
             model=self.model_name,
             gpu_memory_utilization=0.9,
             max_model_len=MAX_MODEL_LENGTH,
+            block_size=8,
             kv_cache_dtype="fp8",
             calculate_kv_scales=True,
             enable_prefix_caching=True,
