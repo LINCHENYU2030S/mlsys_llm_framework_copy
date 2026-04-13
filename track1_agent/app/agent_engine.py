@@ -31,8 +31,9 @@ class AgentEngine:
             calculate_kv_scales=True,
             enable_prefix_caching=True,
             disable_log_stats=False,
+            scheduling_policy="priority",
             trust_remote_code=True,
-            max_num_seqs=10,
+            max_num_seqs=32,
         )
 
         self.engine = AsyncLLMEngine.from_engine_args(engine_args)
@@ -78,7 +79,19 @@ class AgentEngine:
         if len(self.memoized_generations) > self.max_memoized_generations:
             self.memoized_generations.popitem(last=False)
 
-    async def _generate_text(self, prompt: str, temperature: float, max_tokens: int, allowed_choices: list[str] | None = None) -> tuple[str, list[float]]:
+    def _request_priority(self, node_type: str) -> int:
+        if node_type in {"condition", "loop"}:
+            return 0
+        return 1
+
+    async def _generate_text(
+        self,
+        prompt: str,
+        temperature: float,
+        max_tokens: int,
+        allowed_choices: list[str] | None = None,
+        priority: int = 1,
+    ) -> tuple[str, list[float]]:
         structured_params = None
 
         if allowed_choices:
@@ -116,6 +129,7 @@ class AgentEngine:
             formatted_prompt,
             sampling_params,
             random_uuid(),
+            priority=priority,
         )
 
         final_output = None
@@ -207,12 +221,15 @@ class AgentEngine:
             if node.type in ["condition", "loop"]:
                 allowed_choices = ["yes", "no"]
 
+            priority = self._request_priority(node.type)
+
             # 4. Execute LLM Node
             output, logprobs = await self._generate_text(
                 prompt, 
                 temperature=current_temp, 
                 max_tokens=current_max_tokens, 
-                allowed_choices=allowed_choices
+                allowed_choices=allowed_choices,
+                priority=priority,
             )
             
             # Only update last_output for tasks to preserve context through logic checks
