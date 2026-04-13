@@ -92,6 +92,7 @@ class AgentEngine:
         max_tokens: int,
         allowed_choices: list[str] | None = None,
         priority: int = 1,
+        system_prompt: str | None = None,
     ) -> tuple[str, list[float]]:
         structured_params = None
 
@@ -106,7 +107,10 @@ class AgentEngine:
             logprobs=1
         )
 
-        messages = [{"role": "user", "content": prompt}]
+        messages = []
+        if system_prompt is not None:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
         formatted_prompt = self.tokenizer.apply_chat_template(
             messages,
             tokenize=False,
@@ -223,6 +227,7 @@ class AgentEngine:
                 allowed_choices = ["yes", "no"]
 
             priority = self._request_priority(node.type)
+            system_prompt = "Keep the answer short" if node.type == "task" else None
 
             # 4. Execute LLM Node
             output, logprobs = await self._generate_text(
@@ -231,6 +236,7 @@ class AgentEngine:
                 max_tokens=current_max_tokens, 
                 allowed_choices=allowed_choices,
                 priority=priority,
+                system_prompt=system_prompt,
             )
             
             # Only update last_output for tasks to preserve context through logic checks
