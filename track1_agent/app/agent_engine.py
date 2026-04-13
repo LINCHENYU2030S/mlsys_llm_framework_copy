@@ -30,6 +30,7 @@ class AgentEngine:
             kv_cache_dtype="fp8",
             calculate_kv_scales=True,
             enable_prefix_caching=True,
+            enable_chunked_prefill=True,
             async_scheduling=True,
             scheduling_policy="priority",
             trust_remote_code=True,
