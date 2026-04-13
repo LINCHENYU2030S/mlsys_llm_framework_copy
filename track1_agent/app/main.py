@@ -1,13 +1,22 @@
 import asyncio
 import logging
+import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from app.schemas import WorkflowRequest, WorkflowResponse
-from app.agent_engine import AgentEngine
 
-logging.basicConfig(level=logging.INFO)
-logging.getLogger("vllm").setLevel(logging.INFO)
-logging.getLogger("vllm.v1").setLevel(logging.INFO)
+root_logger = logging.getLogger()
+if not root_logger.handlers:
+    handler = logging.StreamHandler(sys.stdout)
+    root_logger.addHandler(handler)
+root_logger.setLevel(logging.INFO)
+
+for name in ("vllm", "vllm.v1", "vllm.v1.metrics.loggers"):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    logger.propagate = True
+
+from app.agent_engine import AgentEngine
 
 engine = AgentEngine()
 
