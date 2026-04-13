@@ -25,12 +25,14 @@ class AgentEngine:
 
         engine_args = AsyncEngineArgs(
             model=self.model_name,
-            gpu_memory_utilization=0.95,
+            gpu_memory_utilization=0.9,
             max_model_len=MAX_MODEL_LENGTH,
             kv_cache_dtype="fp8",
             calculate_kv_scales=True,
             enable_prefix_caching=True,
+            disable_log_stats=False,
             trust_remote_code=True,
+            max_num_seqs=32,
         )
 
         self.engine = AsyncLLMEngine.from_engine_args(engine_args)
@@ -91,7 +93,12 @@ class AgentEngine:
         )
 
         messages = [{"role": "user", "content": prompt}]
-        formatted_prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        formatted_prompt = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=False,
+        )
 
         memoization_key = None
         if self._should_memoize(temperature):

@@ -125,9 +125,16 @@ def rewrite_prompt_template_for_prefix_caching(prompt_template: str) -> str:
     prefix_segments = segments[:suffix_start]
     prefix_separators = separators[: suffix_start - 1]
 
-    return (
+    rewritten_prompt_template = (
         _join_segments(moved_segments, moved_separators)
         + bridge_separator
         + _join_segments(prefix_segments, prefix_separators)
         + trailing_separator
     )
+
+    # print("[prompt-rewrite] before:")
+    # print(prompt_template)
+    # print("[prompt-rewrite] after:")
+    # print(rewritten_prompt_template)
+
+    return rewritten_prompt_template

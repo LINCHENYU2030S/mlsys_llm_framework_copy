@@ -1,8 +1,13 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from app.schemas import WorkflowRequest, WorkflowResponse
 from app.agent_engine import AgentEngine
+
+logging.basicConfig(level=logging.INFO)
+logging.getLogger("vllm").setLevel(logging.INFO)
+logging.getLogger("vllm.v1").setLevel(logging.INFO)
 
 engine = AgentEngine()
 
