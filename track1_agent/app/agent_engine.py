@@ -32,7 +32,7 @@ class AgentEngine:
             enable_prefix_caching=True,
             disable_log_stats=False,
             trust_remote_code=True,
-            max_num_seqs=32,
+            max_num_seqs=10,
         )
 
         self.engine = AsyncLLMEngine.from_engine_args(engine_args)
