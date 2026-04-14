@@ -2,6 +2,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from app.schemas import WorkflowRequest, WorkflowResponse
+from vllm.entrypoints.serve.instrumentator.metrics import attach_router
 
 from app.agent_engine import AgentEngine
 
@@ -16,6 +17,7 @@ async def lifespan(app: FastAPI):
     pass
 
 app = FastAPI(title="Track 1: Agent Engine", lifespan=lifespan)
+attach_router(app)
 
 @app.post("/v1/workflow", response_model=WorkflowResponse)
 async def run_workflow(request: WorkflowRequest):

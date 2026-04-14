@@ -31,3 +31,4 @@ build/
 *.log
 
 train.json
+*.zip
