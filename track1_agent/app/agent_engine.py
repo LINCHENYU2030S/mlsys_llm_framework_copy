@@ -2,7 +2,11 @@ from collections import OrderedDict
 
 from app.schemas import WorkflowRequest, WorkflowResponse, ExecutionStep
 from app.constants import MAX_STEPS, MODEL_NAME, MAX_MODEL_LENGTH
-from app.prompt_template_rewriter import rewrite_prompt_template_for_prefix_caching
+from app.prompt_template_rewriter import (
+    optimize_raw_extraction_prompt_template,
+    prompt_contains_merge_raw_extraction_sentence,
+    rewrite_prompt_template_for_prefix_caching,
+)
 from vllm.engine.arg_utils import AsyncEngineArgs
 from vllm.engine.async_llm_engine import AsyncLLMEngine
 from vllm.sampling_params import SamplingParams, StructuredOutputsParams
@@ -213,13 +217,27 @@ class AgentEngine:
                 continue
 
             # 2. Prepare Prompt
+            raw_extraction_concat_optimization = False
+            prior_last_output = ""
             try:
+                prompt_template = node.prompt_template
+                if node.type == "task":
+                    prior_last_output = context.get("last_output", "")
+                    if not isinstance(prior_last_output, str):
+                        prior_last_output = str(prior_last_output)
+
+                    (
+                        prompt_template,
+                        raw_extraction_concat_optimization,
+                    ) = optimize_raw_extraction_prompt_template(prompt_template)
+
                 optimized_prompt_template = rewrite_prompt_template_for_prefix_caching(
-                    node.prompt_template
+                    prompt_template
                 )
                 prompt = optimized_prompt_template.format(**context)
             except Exception as e:
                 prompt = f"Error formatting prompt: {e}"
+                raw_extraction_concat_optimization = False
 
             # 3. Determine Constraints
             allowed_choices = None
@@ -241,6 +259,8 @@ class AgentEngine:
             
             # Only update last_output for tasks to preserve context through logic checks
             if node.type == "task":
+                if raw_extraction_concat_optimization:
+                    output = prior_last_output + " " + output
                 context["last_output"] = output
             
             trace.append(ExecutionStep(
@@ -257,6 +277,15 @@ class AgentEngine:
             # 5. Flow Control
             if node.type == "task":
                 current_node_id = node.next_node_id
+                if raw_extraction_concat_optimization and current_node_id is not None:
+                    next_node = node_map.get(current_node_id)
+                    if (
+                        next_node is not None
+                        and prompt_contains_merge_raw_extraction_sentence(
+                            next_node.prompt_template
+                        )
+                    ):
+                        current_node_id = next_node.next_node_id
             
             elif node.type == "condition":
                 current_node_id = node.yes_node_id if output == "yes" else node.no_node_id

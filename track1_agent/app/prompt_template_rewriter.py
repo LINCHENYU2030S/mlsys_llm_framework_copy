@@ -6,6 +6,13 @@ PLACEHOLDER_RE = re.compile(r"\{[^{}]+\}")
 HORIZONTAL_WHITESPACE = " \t\r"
 SENTENCE_TERMINATORS = ".?!"
 CLOSING_PUNCTUATION = "\"')}]"
+RAW_EXTRACTION_OUTPUT_SENTENCE = (
+    "Output the extracted data only."
+)
+MERGE_RAW_EXTRACTION_SENTENCE = (
+    "Merge the RAW_EXTRACTION into the Context. Output only the updated Context."
+)
+CONTEXT_SO_FAR_SUBSTRING = "Context so far:\n{last_output}"
 
 
 def _contains_placeholder(text: str) -> bool:
@@ -138,3 +145,45 @@ def rewrite_prompt_template_for_prefix_caching(prompt_template: str) -> str:
     # print(rewritten_prompt_template)
 
     return rewritten_prompt_template
+
+
+def _is_raw_extraction_copy_sentence(segment: str) -> bool:
+    lowered = segment.lower()
+    return (
+        "output" in lowered
+        and "context" in lowered
+        and "followed by 'raw_extraction:'" in lowered
+        and "extracted data" in lowered
+    )
+
+
+@lru_cache(maxsize=4096)
+def optimize_raw_extraction_prompt_template(
+    prompt_template: str,
+) -> tuple[str, bool]:
+    segments, separators, trailing_separator = _split_template(prompt_template)
+
+    changed = False
+    optimized_segments: list[str] = []
+    for segment in segments:
+        if _is_raw_extraction_copy_sentence(segment):
+            optimized_segments.append(RAW_EXTRACTION_OUTPUT_SENTENCE)
+            changed = True
+        else:
+            optimized_segments.append(segment)
+
+    if not changed:
+        return prompt_template, False
+
+    optimized_prompt_template = _join_segments(
+        optimized_segments,
+        separators,
+        trailing_separator,
+    ).replace(CONTEXT_SO_FAR_SUBSTRING, "")
+
+    return optimized_prompt_template, True
+
+
+@lru_cache(maxsize=4096)
+def prompt_contains_merge_raw_extraction_sentence(prompt_template: str) -> bool:
+    return MERGE_RAW_EXTRACTION_SENTENCE in prompt_template
